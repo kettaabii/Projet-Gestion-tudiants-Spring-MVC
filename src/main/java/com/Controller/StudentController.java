@@ -1,32 +1,66 @@
 package com.Controller;
 
-import com.interfaces.StudentsDao;
+
+import com.exception.ResourceNotFoundException;
 import com.modals.Students;
+import com.service.StudentService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Controller
+@RequestMapping("/")
 public class StudentController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(StudentController.class);
+
     @Autowired
-    private StudentsDao studentsDao;
+    private StudentService studentService;
 
-    @RequestMapping(value = "/", method = RequestMethod.GET)
-    public String formAddStudent(Model model){
-
-        return "AddStudent";
+    @GetMapping("/students")
+    public String listStudents(Model theModel) {
+        List<Students> studentList = studentService.getAllStudents();
+        theModel.addAttribute("students", studentList);
+        return "StudentList";
+    }
+    @GetMapping("/")
+    public String index(Model theModel) {
+        List<Students> studentList = studentService.getAllStudents();
+        return "dashboard";
     }
 
-    @RequestMapping(value = "/addStudent", method = RequestMethod.POST)
-    public String AddStudent(Students student){
-        studentsDao.AddStudent(student);
-        studentsDao.GetAllStudents().forEach(System.out::println);
-        return "AddStudent";
+    @GetMapping("/addStudent")
+    public String showFormForAdd(Model theModel) {
+        LOG.debug("inside show StudentForm handler method");
+        Students student = new Students();
+        theModel.addAttribute("student", student);
+        return "StudentForm";
+    }
+
+    @PostMapping("/save-student")
+    public String saveStudent(@ModelAttribute("student") Students student) {
+        System.out.println(student.getEmail());
+        studentService.addStudent(student);
+        return "redirect:/students";
+    }
+
+    @GetMapping("/update-student")
+    public String showFormForUpdate(@RequestParam("studentId") String Id,
+                                    Model theModel) throws ResourceNotFoundException {
+        Students student = studentService.getStudentById(Id);
+        theModel.addAttribute("student", student);
+        return "UpdateForm";
+    }
+
+    @GetMapping("/remove-student")
+    public String deleteStudent(@RequestParam("studentId") String Id){
+        studentService.deleteStudentByStudentId(Id);
+        return "redirect:/students";
     }
 
 }
-
